@@ -175,11 +175,13 @@
                                         <div className="grid grid-cols-1 gap-1">
                                             <div className="bg-slate-800 p-2 rounded text-xs">
                                                 <span className="text-yellow-400 font-bold block">固有: {role.uniqueSkill.name}</span>
-                                                <span>{role.uniqueSkill.desc}</span>
+                                                {/* 変更点: モーダル内のスキル説明文も折り返し設定 */}
+                                                <span className="block whitespace-pre-wrap break-words">{role.uniqueSkill.desc}</span>
                                             </div>
                                             <div className="bg-slate-800 p-2 rounded text-xs">
                                                 <span className="text-red-400 font-bold block">必殺: {role.ultimateSkill.name}</span>
-                                                <span>{role.ultimateSkill.desc}</span>
+                                                {/* 変更点: モーダル内のスキル説明文も折り返し設定 */}
+                                                <span className="block whitespace-pre-wrap break-words">{role.ultimateSkill.desc}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1470,7 +1472,7 @@
 
                                 <div className="relative z-10">
                                     {phase === 'ROLE_CONFIRM' ? (
-                                        <div className={`mb-4 p-4 rounded-xl text-center font-black text-4xl border-4 shadow-xl ${activePlayer.realTeam === 'HERO' ? 'bg-blue-900/90 border-blue-400 text-blue-200' : 'bg-red-900/90 border-red-500 text-red-200'}`}>
+                                        <div className={`mb-4 p-3 rounded-xl text-center font-black text-3xl border-4 shadow-xl ${activePlayer.realTeam === 'HERO' ? 'bg-blue-900/90 border-blue-400 text-blue-200' : 'bg-red-900/90 border-red-500 text-red-200'}`}>
                                             {activePlayer.realTeam === 'HERO' ? '勇者陣営' : '魔王陣営'}
                                         </div>
                                     ) : (
@@ -1494,7 +1496,7 @@
                                     {phase === 'ROLE_CONFIRM' && (
                                         <>
                                             <div className="text-center mb-3">
-                                                <div className="w-32 h-32 mx-auto bg-slate-800 rounded-full border-4 border-yellow-500 overflow-hidden mb-2 shadow-lg">
+                                                <div className="w-24 h-24 mx-auto bg-slate-800 rounded-full border-4 border-yellow-500 overflow-hidden mb-2 shadow-lg">
                                                     <img src={ROLES[activePlayer.roleKey].img} className="w-full h-full object-cover" onError={(e) => e.target.style.display = 'none'} />
                                                 </div>
                                                 <h2 className="text-3xl font-black text-yellow-500 drop-shadow-md">{activePlayer.roleName}</h2>
@@ -1545,7 +1547,7 @@
                                                     {ROLES[activePlayer.roleKey].uniqueSkill.type === 'PASSIVE' ? '自動' : activePlayer.uniqueSkillUsed ? '使用済' : '未使用'}
                                                 </span>
                                             </div>
-                                            <p className="text-[10px] text-slate-300 truncate">{ROLES[activePlayer.roleKey].uniqueSkill.desc}</p>
+                                            <p className="text-[10px] text-slate-300 whitespace-pre-wrap break-words leading-tight">{ROLES[activePlayer.roleKey].uniqueSkill.desc}</p>
                                         </div>
                                         
                                         <div className={`p-2 rounded border border-slate-600 backdrop-blur-sm ${activePlayer.ultimateSkillUsed ? 'bg-slate-800/50 opacity-60' : 'bg-slate-800/80'}`}>
@@ -1555,7 +1557,7 @@
                                                     {activePlayer.ultimateSkillUsed ? '使用済' : '未使用'}
                                                 </span>
                                             </div>
-                                            <p className="text-[10px] text-slate-300 truncate">{ROLES[activePlayer.roleKey].ultimateSkill.desc}</p>
+                                            <p className="text-[10px] text-slate-300 whitespace-pre-wrap break-words leading-tight">{ROLES[activePlayer.roleKey].ultimateSkill.desc}</p>
                                         </div>
                                     </div>
 
