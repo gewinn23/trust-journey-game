@@ -58,10 +58,10 @@
         // --- 画像アセット ---
         const IMAGES = {
             BOSS: '魔王.png',
-            BOSS_NORMAL: '魔王-通常攻撃.png',
-            BOSS_MAGIC: '魔王-魔法攻撃.png',
-            BOSS_HELLFIRE: '魔王-闇の獄炎.png',
-            BOSS_ROAR: '魔王-魔王の咆哮.png'
+            BOSS_NORMAL: '魔王-通常攻撃.jpg',
+            BOSS_MAGIC: '魔王-魔法攻撃.jpg',
+            BOSS_HELLFIRE: '魔王-闇の獄炎.jpg',
+            BOSS_ROAR: '魔王-魔王の咆哮.jpg'
         };
 
         // --- モンスターデータ ---
@@ -90,7 +90,7 @@
                 name: '魔法使い', atk: 4, hp: 3, def: 1, img: '魔法使い.png',
                 desc: '火力が高い魔法アタッカー',
                 uniqueSkill: { name: '魔法感知', type: 'QUEST_ACTIVE', desc: '【ユニーク】選択したプレイヤーの職業と陣営を盗み見ることができる' },
-                ultimateSkill: { name: '強化魔法', type: 'BOSS_ACTIVE', desc: '選択したプレイヤーのHP+10 ATKを+7 する' }
+                ultimateSkill: { name: '強化魔法', type: 'BOSS_ACTIVE', desc: '選択したプレイヤーのATK+7 DEF+7 する' }
             },
             CLERIC: { 
                 name: '僧侶', atk: 1, hp: 5, def: 2, img: '僧侶.png',
@@ -967,7 +967,7 @@
 
             const startBossBattleRound = () => {
                 setBossBattleActions({});
-                setBattleState(prev => ({ ...prev, knightTarget: null, forceBossNormal: false, bossStunned: false })); 
+                setBattleState(prev => ({ ...prev, knightTarget: null, forceBossNormal: false, bossStunned: false, knightGuard: null })); 
                 setRoundDamageReport({}); // ラウンドごとのダメージレポートリセット
                 
                 // ターン開始時に一時的な効果をリセット
@@ -1031,8 +1031,11 @@
                                 } else if (activePlayer.roleKey === 'MAGE') {
                                     // MAGEはプレイヤー限定選択
                                     showAttackTargetSelect(true, 'PLAYER_ONLY');
+                                } else if (activePlayer.roleKey === 'KNIGHT') {
+                                    // 騎士もターゲット選択が必要
+                                    showAttackTargetSelect(true);
                                 } else {
-                                    // ターゲット選択が必要なスキル (HERO, WARRIOR, KNIGHT, BARRIER_MASTER)
+                                    // ターゲット選択が必要なスキル (HERO, WARRIOR, BARRIER_MASTER)
                                     showAttackTargetSelect(true); 
                                 }
                             }
@@ -1066,7 +1069,7 @@
 
                 setChoicePopup({
                     title: isSkill ? 'スキル対象選択' : '攻撃対象選択',
-                    message: '誰を対象にしますか？',
+                    message: isSkill && activePlayer.roleKey === 'KNIGHT' ? '誰からの攻撃を引き受けますか？' : '誰を対象にしますか？',
                     choices: choices,
                     onClose: (val) => {
                         setChoicePopup(null);
@@ -1106,8 +1109,13 @@
                     newLog.push({ text: `${actor.name} の必殺スキル！「${role.ultimateSkill.name}」`, type: 'info' });
 
                     if (actor.roleKey === 'KNIGHT') { 
-                        currentState.knightTarget = actor.id; 
-                        newLog.push({ text: `>> 味方への攻撃を引きつける！`, type: 'info' }); 
+                        // 修正: 特定の相手からの攻撃を引き受ける
+                        currentState.knightGuard = {
+                            knightId: actor.id,
+                            sourceId: action.targetId // BOSS or player ID
+                        };
+                        const targetName = action.targetId === 'BOSS' ? '魔王' : nextPlayers.find(p => p.id === parseInt(action.targetId))?.name || '不明';
+                        newLog.push({ text: `>> ${targetName} からの攻撃を一身に受ける構え！`, type: 'info' }); 
                     }
                     else if (actor.roleKey === 'MONK') { 
                         const pIdx = nextPlayers.findIndex(p => p.id === actor.id);
@@ -1145,8 +1153,9 @@
                          if(target) {
                              const pIdx = nextPlayers.findIndex(p => p.id === target.id);
                              // バフは永続 (nextPlayersを更新してstateに保存するため)
-                             nextPlayers[pIdx] = { ...target, currentHp: target.currentHp + 10, atkBonus: (target.atkBonus||0) + 7 };
-                             newLog.push({ text: `>> ${target.name} を強化！(HP+10, ATK+7)`, type: 'success' });
+                             // 変更: HP回復なし、ATK+7, DEF+7
+                             nextPlayers[pIdx] = { ...target, atkBonus: (target.atkBonus||0) + 7, defBonus: (target.defBonus||0) + 7 };
+                             newLog.push({ text: `>> ${target.name} を強化！(ATK+7, DEF+7)`, type: 'success' });
                          }
                     }
                      else if (actor.roleKey === 'PLAYBOY') {
@@ -1178,6 +1187,7 @@
                             currentDmg = (actor.level * ROLES[actor.roleKey].atk + (actor.atkBonus||0)) * 2;
                             skillName = "渾身斬り";
                         } else if (actor.roleKey === 'HERO') {
+                            // 勇者: 生存勇者陣営人数 * 10 + ATK
                             const aliveCount = nextPlayers.filter(p => !p.isDead && p.realTeam === 'HERO').length; 
                             currentDmg = (aliveCount * 10) + (actor.level * ROLES[actor.roleKey].atk + (actor.atkBonus||0));
                              skillName = "聖なる斬撃";
@@ -1187,7 +1197,7 @@
                              } else {
                                  currentDmg = 100;
                              }
-                             // 自己回復のみ行う
+                             // 自己回復のみ行う (上限チェック済み)
                              const pIdx = nextPlayers.findIndex(p => p.id === actor.id);
                              if (pIdx !== -1) {
                                 nextPlayers[pIdx] = { 
@@ -1225,13 +1235,38 @@
                             nextPlayers[pIdx].totalDamageDealt += currentDmg;
                         } else {
                             // 対プレイヤー
-                            const tIdx = nextPlayers.findIndex(p => p.id === parseInt(action.targetId));
+                            let targetId = parseInt(action.targetId);
+                            
+                            // 騎士のかばう処理 (対プレイヤー攻撃)
+                            if (currentState.knightGuard && currentState.knightGuard.sourceId === actor.id) {
+                                const knight = nextPlayers.find(p => p.id === currentState.knightGuard.knightId);
+                                if (knight && !knight.isDead && knight.id !== targetId) {
+                                    newLog.push({ text: `${knight.name} が攻撃を引き受けた！`, type: 'info' });
+                                    targetId = knight.id;
+                                }
+                            }
+
+                            const tIdx = nextPlayers.findIndex(p => p.id === targetId);
                             if (tIdx !== -1 && !nextPlayers[tIdx].isDead) {
                                 let target = nextPlayers[tIdx];
-                                const def = (target.level * ROLES[target.roleKey].def) + (target.defBonus||0);
-                                const realDmg = Math.max(1, currentDmg - def);
-                                target.currentHp -= realDmg;
-                                newLog.push({ text: `${target.name} に ${realDmg} ダメージ！`, type: 'damage' });
+                                
+                                // 反撃判定 (盗賊)
+                                if (target.counterStance) {
+                                     newLog.push({ text: `${target.name} は攻撃を回避し、反撃した！`, type: 'info' });
+                                     target.counterStance = false; // 消費
+                                     // 攻撃者に10ダメージ
+                                     const pIdx = nextPlayers.findIndex(p => p.id === actor.id);
+                                     nextPlayers[pIdx].currentHp -= 10;
+                                     newLog.push({ text: `${actor.name} に 10 の反撃ダメージ！`, type: 'damage' });
+                                } else if (target.shield) {
+                                     newLog.push({ text: `結界が ${target.name} を守った！ ダメージ無効！`, type: 'success' });
+                                     target.shield = false; // 消費
+                                } else {
+                                    const def = (target.level * ROLES[target.roleKey].def) + (target.defBonus||0);
+                                    const realDmg = Math.max(1, currentDmg - def);
+                                    target.currentHp -= realDmg;
+                                    newLog.push({ text: `${target.name} に ${realDmg} ダメージ！`, type: 'damage' });
+                                }
                             }
                         }
                     }
@@ -1255,13 +1290,27 @@
                             const applyDamage = (target, rawDmg, ignoreDef = false) => {
                                 if (target.isDead) return;
                                 
-                                // かばう処理
-                                if (currentState.knightTarget && currentState.knightTarget !== target.id) {
-                                     const knight = nextPlayers.find(p => p.id === currentState.knightTarget);
+                                // 騎士のかばう処理 (対魔王攻撃)
+                                if (currentState.knightGuard && currentState.knightGuard.sourceId === 'BOSS' && currentState.knightGuard.knightId !== target.id) {
+                                     const knight = nextPlayers.find(p => p.id === currentState.knightGuard.knightId);
                                      if (knight && !knight.isDead) {
                                          newLog.push({ text: `${knight.name} が ${target.name} をかばった！`, type: 'info' });
                                          target = knight; 
                                      }
+                                }
+
+                                // 盗賊の回避・結界師のバリア
+                                if (target.counterStance) {
+                                    newLog.push({ text: `${target.name} は魔王の攻撃を回避し、反撃！`, type: 'success' });
+                                    target.counterStance = false;
+                                    currentBossHP -= 10;
+                                    newLog.push({ text: `魔王に 10 ダメージ！`, type: 'damage' });
+                                    return;
+                                }
+                                if (target.shield) {
+                                    newLog.push({ text: `絶対防御結界が ${target.name} を守った！`, type: 'success' });
+                                    target.shield = false;
+                                    return;
                                 }
 
                                 const def = ignoreDef ? 0 : (target.level * ROLES[target.roleKey].def + (target.defBonus||0));
@@ -1865,4 +1914,3 @@
     </script>
 </body>
 </html>
-
