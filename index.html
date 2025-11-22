@@ -291,7 +291,7 @@
                             {orderedPlayers.map((p) => (
                                 <div key={p.id} className={`flex-none w-20 bg-slate-800 rounded border ${p.isDead ? 'border-red-900 opacity-60' : 'border-slate-600'} p-1 flex flex-col justify-center gap-0.5 relative`}>
                                     <div className="flex justify-between items-center leading-none px-0.5 relative z-10">
-                                        <img src={ROLES[p.roleKey].img} alt={p.roleName} className="w-4 h-4 object-cover rounded-full border border-slate-500 mr-1" onError={(e) => e.target.style.display = 'none'} />
+                                        {/* 画像を削除 */}
                                         <span className={`font-bold text-xs truncate flex-grow ${p.isDead ? 'text-red-500' : 'text-white'}`}>{p.name}</span>
                                         {p.isDead && <span className="text-[9px] text-red-500 font-black ml-0.5">†</span>}
                                     </div>
@@ -1584,19 +1584,21 @@
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 text-left overflow-y-auto flex-grow content-start">
                                         {quests.map(q => (
                                             <div key={q.id} className={`bg-slate-800 p-3 rounded-xl border-2 ${q.borderColor} relative shadow-md`}>
-                                                <div className="flex justify-between items-center mb-1">
+                                                <div className="flex justify-between items-center mb-2">
                                                     <div className={`font-black text-lg ${q.color}`}>{q.title} <span className="text-base text-slate-400">({q.rank})</span></div>
-                                                    <div className="bg-slate-900/80 px-4 py-2 rounded border border-slate-600 text-center min-w-[60px]">
-                                                        <span className="text-xs text-slate-400 block">必要</span>
-                                                        <span className="text-xl font-black text-white">{q.req}</span>
+                                                    <div className="flex items-center gap-2">
+                                                         <span className="text-red-400 font-bold text-sm bg-red-900/30 px-2 py-1 rounded border border-red-500/30 whitespace-nowrap">
+                                                            HP -{q.damageVal}
+                                                         </span>
+                                                         <div className="bg-slate-900/80 px-3 py-1 rounded border border-slate-600 text-center">
+                                                            <span className="text-[10px] text-slate-400 block leading-none">必要</span>
+                                                            <span className="text-lg font-black text-white leading-none">{q.req}</span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <div className="text-base text-white font-bold">報酬: Lv +{q.rewardVal}</div>
                                                     <div className="text-sm font-bold text-yellow-200 bg-slate-700/50 px-2 py-1 rounded">討伐: {q.monsterName}</div>
-                                                </div>
-                                                <div className="text-sm text-red-300 bg-red-900/20 p-1.5 rounded mt-1 font-bold inline-block">
-                                                    ⚠️ 疲労ダメージ: -{q.damageVal} HP
                                                 </div>
                                             </div>
                                         ))}
@@ -1612,17 +1614,23 @@
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             {quests.map(q => (
                                                 <div key={q.id} onClick={() => handleQuestClick(q)} className={`bg-slate-800 p-3 rounded-xl border-2 ${q.borderColor} active:bg-slate-700 cursor-pointer relative shadow-md hover:scale-[1.01] transition overflow-hidden`}>
-                                                    {/* 修正: 必要人数を右上に配置、小さく */}
-                                                    <div className="absolute top-0 right-0 bg-slate-900/90 px-2 py-0.5 rounded-bl-xl border-b border-l border-slate-600 z-10">
-                                                        <span className="text-[10px] text-slate-400 mr-1">必要</span>
-                                                        <span className="text-xl font-black text-white">{q.req}</span>
-                                                        <span className="text-sm text-slate-400 ml-0.5">人</span>
+                                                    {/* 修正: ダメージと必要人数を右上に並べて配置 */}
+                                                    <div className="absolute top-0 right-0 flex">
+                                                        {/* ダメージ */}
+                                                        <div className="bg-red-900/80 px-2 py-1 border-b border-l border-red-700 z-10 flex items-center">
+                                                            <span className="text-xs text-red-200 font-bold">-{q.damageVal} HP</span>
+                                                        </div>
+                                                        {/* 必要人数 */}
+                                                        <div className="bg-slate-900/90 px-2 py-1 rounded-bl-xl border-b border-l border-slate-600 z-10 flex items-center">
+                                                            <span className="text-[10px] text-slate-400 mr-1">必要</span>
+                                                            <span className="text-lg font-black text-white">{q.req}</span>
+                                                            <span className="text-xs text-slate-400 ml-0.5">人</span>
+                                                        </div>
                                                     </div>
 
                                                     <div className="mt-1">
                                                         <div className={`font-black text-lg ${q.color} mb-1`}>{q.title}</div>
                                                         <div className="text-base text-yellow-400 font-bold">報酬 Lv+{q.rewardVal} <span className="text-slate-400 text-sm ml-2">({q.monsterName})</span></div>
-                                                        <div className="text-sm text-red-400 font-bold mt-1 bg-red-900/30 px-2 py-0.5 rounded inline-block">dmg -{q.damageVal}</div>
                                                     </div>
                                                     <div className="absolute bottom-2 right-2 px-2 py-0.5 text-sm text-blue-400 font-bold bg-slate-900 rounded border border-blue-900">タップで参加</div>
                                                 </div>
@@ -1684,9 +1692,9 @@
                                         {players.filter(p => !p.isDead && p.id !== activePlayerId).map(p => (
                                             <button key={p.id} onClick={()=>handleVote(p.id)} className="bg-slate-800 border-4 border-slate-600 active:bg-red-900/50 p-4 rounded-2xl font-bold text-2xl h-36 flex items-center justify-center shadow-lg hover:border-red-500 transition overflow-hidden relative">
                                                 {/* 背景画像 */}
-                                                <div className="absolute inset-0 opacity-30">
+                                                {/* <div className="absolute inset-0 opacity-30">
                                                     <img src={ROLES[p.roleKey].img} className="w-full h-full object-cover grayscale" onError={(e) => e.target.style.display = 'none'} />
-                                                </div>
+                                                </div> */}
                                                 <span className="relative z-10 drop-shadow-lg">{p.name}</span>
                                             </button>
                                         ))}
