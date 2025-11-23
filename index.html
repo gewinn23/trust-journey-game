@@ -137,7 +137,6 @@
         };
 
         // --- ヘルパー関数 ---
-        // 説明文が長い場合に改行を入れる
         const formatSkillDesc = (text) => {
             if (!text) return "";
             if (text.length <= 30) return text;
@@ -1023,6 +1022,8 @@
                             else if (val === 'skill') {
                                 // ターゲット選択不要なスキル (修正: SAGEとTHIEFを削除)
                                 if (['CLERIC', 'MONK', 'SPIRIT', 'PLAYBOY'].includes(activePlayer.roleKey)) {
+                                    // SAGEも攻撃対象固定または自分回復のみなら選択不要だが、魔王orプレイヤー選択がある場合は必要
+                                    // 今回SAGEは魔王orプレイヤー選択なので、SAGEは選択必要リストへ
                                     handleBossAction({ type: 'SKILL' });
                                 } else if (activePlayer.roleKey === 'SAGE') {
                                     // SAGEは対象選択が必要
@@ -1083,6 +1084,7 @@
                     choices: choices,
                     onClose: (val) => {
                         setChoicePopup(null);
+                        // 修正: valがnullやundefinedでないことを厳密にチェック (0の場合も考慮)
                         if (val !== null && val !== undefined) handleBossAction({ type: isSkill ? 'SKILL' : 'ATTACK', targetId: val });
                     }
                 });
@@ -1231,7 +1233,12 @@
                     }
 
                     if (currentDmg > 0) {
-                        if (skillName) newLog.push({ text: `${actor.name} の ${skillName}！`, type: 'info' });
+                        // 変更: 行動ログを統一的に出す
+                        if (skillName) {
+                             newLog.push({ text: `${actor.name} の ${skillName}！`, type: 'info' });
+                        } else {
+                             newLog.push({ text: `${actor.name} の 通常攻撃`, type: 'info' });
+                        }
 
                         if (action.targetId === 'BOSS') {
                             // 騎士の魔王かばうチェック
