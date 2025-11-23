@@ -45,8 +45,6 @@
                 "しかし、その中には魔王に魂を売った「裏切り者」が紛れ込んでいるとのうわさが....",
                 "裏切者を追放し、クエストをクリアしてレベルを上げ魔王を討伐しよう！"
             ],
-            // OVERVIEWはJSX内で直接記述するため削除
-            // FLOWは削除
             NOTE: "※職業ごとにスキルが存在し、裏切者を発見するスキルや魔王討伐の際に有効なスキルなど様々なものが存在ます。"
         };
 
@@ -57,7 +55,7 @@
             BOSS_MAGIC: '魔王-魔法攻撃.jpg',
             BOSS_HELLFIRE: '魔王-闇の獄炎.jpg',
             BOSS_ROAR: '魔王-魔王の咆哮.jpg',
-            HEADER: 'ヘッダー.png' // ヘッダー画像追加
+            HEADER: 'ヘッダー.png' 
         };
 
         // --- モンスターデータ ---
@@ -138,8 +136,16 @@
             }
         };
 
-        // --- コンポーネント ---
+        // --- ヘルパー関数 ---
+        // 説明文が長い場合に改行を入れる
+        const formatSkillDesc = (text) => {
+            if (!text) return "";
+            if (text.length <= 30) return text;
+            const regex = new RegExp(`.{1,30}`, 'g');
+            return text.match(regex).join('\n');
+        };
 
+        // --- コンポーネント ---
         const RoleListModal = ({ isOpen, onClose }) => {
             if (!isOpen) return null;
             return (
@@ -166,16 +172,13 @@
                                             <div><span className="text-xs text-slate-400 block">DEF</span>Lv×{role.def}</div>
                                         </div>
                                         <div className="text-sm text-slate-300 mb-2">{role.desc}</div>
-                                        
                                         <div className="grid grid-cols-1 gap-1">
                                             <div className="bg-slate-800 p-2 rounded text-xs">
                                                 <span className="text-yellow-400 font-bold block">固有: {role.uniqueSkill.name}</span>
-                                                {/* 変更点: モーダル内のスキル説明文も折り返し設定 */}
                                                 <span className="block whitespace-pre-wrap break-words">{role.uniqueSkill.desc}</span>
                                             </div>
                                             <div className="bg-slate-800 p-2 rounded text-xs">
                                                 <span className="text-red-400 font-bold block">必殺: {role.ultimateSkill.name}</span>
-                                                {/* 変更点: モーダル内のスキル説明文も折り返し設定 */}
                                                 <span className="block whitespace-pre-wrap break-words">{role.ultimateSkill.desc}</span>
                                             </div>
                                         </div>
@@ -208,7 +211,7 @@
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
                 <div className="bg-slate-800 border-2 border-yellow-500 rounded-xl p-6 max-w-md w-full text-center shadow-2xl modal-anim">
                     <h2 className="text-2xl font-bold mb-4 text-yellow-400">{title}</h2>
-                    <p className="text-lg mb-6 whitespace-pre-wrap text-slate-200">{message}</p>
+                    <p className="text-lg mb-6 whitespace-pre-wrap text-slate-200">{formatSkillDesc(message)}</p>
                     <div className="flex flex-col gap-3">
                         {choices.map((choice, idx) => (
                             <button 
@@ -289,7 +292,6 @@
                             {orderedPlayers.map((p) => (
                                 <div key={p.id} className={`flex-none w-20 bg-slate-800 rounded border ${p.isDead ? 'border-red-900 opacity-60' : 'border-slate-600'} p-1 flex flex-col justify-center gap-0.5 relative`}>
                                     <div className="flex justify-between items-center leading-none px-0.5 relative z-10">
-                                        {/* 画像を削除 */}
                                         <span className={`font-bold text-xs truncate flex-grow ${p.isDead ? 'text-red-500' : 'text-white'}`}>{p.name}</span>
                                         {p.isDead && <span className="text-[9px] text-red-500 font-black ml-0.5">†</span>}
                                     </div>
@@ -802,8 +804,8 @@
                                 let rise = q.rewardVal;
                                 if (p.trainingBonus) rise += 3;
 
-                                // 遊び人パッシブ: 遊びの極意 (50%で報酬2倍)
-                                if (p.roleKey === 'PLAYBOY' && Math.random() < 0.5) rise *= 2;
+                                // 修正：遊び人の経験値2倍パッシブを削除
+                                // (以前のコードにあった「if (p.roleKey === 'PLAYBOY' && Math.random() < 0.5) rise *= 2;」を削除)
 
                                 // 格闘家パッシブ: 孤独の修行 (1人でクリア時Lv+1)
                                 if (p.roleKey === 'MONK' && participantIds.length === 1) {
@@ -955,7 +957,8 @@
             const startBossPhase = () => {
                 const aliveCount = players.filter(p => !p.isDead).length;
                 setBossInitialPlayerCount(aliveCount); 
-                setPlayers(prev => prev.map(p => ({ ...p, uniqueSkillUsed: false, ultimateSkillUsed: false, charge: false, counterStance: false, shield: false, stunned: false })));
+                // 修正: uniqueSkillUsedのリセットを削除
+                setPlayers(prev => prev.map(p => ({ ...p, ultimateSkillUsed: false, charge: false, counterStance: false, shield: false, stunned: false })));
 
                 setBossTurnCount(1);
                 setBossBattleLog([]);
@@ -965,7 +968,7 @@
 
             const startBossBattleRound = () => {
                 setBossBattleActions({});
-                setBattleState(prev => ({ ...prev, knightTarget: null, forceBossNormal: false, bossStunned: false })); 
+                setBattleState(prev => ({ ...prev, knightTarget: null, forceBossNormal: false, bossStunned: false, knightGuard: null })); // 修正: knightGuard追加
                 setRoundDamageReport({}); // ラウンドごとのダメージレポートリセット
                 
                 // ターン開始時に一時的な効果をリセット
@@ -1018,19 +1021,23 @@
                             setChoicePopup(null);
                             if (val === 'attack') showAttackTargetSelect();
                             else if (val === 'skill') {
-                                // ターゲット選択不要なスキル
-                                if (['CLERIC', 'MONK', 'SPIRIT', 'PLAYBOY', 'THIEF', 'SAGE'].includes(activePlayer.roleKey)) {
-                                    // SAGEも攻撃対象固定または自分回復のみなら選択不要だが、魔王orプレイヤー選択がある場合は必要
-                                    // 今回SAGEは魔王orプレイヤー選択なので、SAGEは選択必要リストへ
+                                // ターゲット選択不要なスキル (修正: SAGEとTHIEFを削除)
+                                if (['CLERIC', 'MONK', 'SPIRIT', 'PLAYBOY'].includes(activePlayer.roleKey)) {
                                     handleBossAction({ type: 'SKILL' });
                                 } else if (activePlayer.roleKey === 'SAGE') {
                                     // SAGEは対象選択が必要
                                     showAttackTargetSelect(true);
+                                } else if (activePlayer.roleKey === 'THIEF') {
+                                     // THIEFは対象選択が必要
+                                    showAttackTargetSelect(true);
                                 } else if (activePlayer.roleKey === 'MAGE') {
                                     // MAGEはプレイヤー限定選択
                                     showAttackTargetSelect(true, 'PLAYER_ONLY');
+                                } else if (activePlayer.roleKey === 'KNIGHT') {
+                                    // 騎士の場合、特殊な選択肢を表示
+                                    showAttackTargetSelect(true, 'KNIGHT_GUARD');
                                 } else {
-                                    // ターゲット選択が必要なスキル (HERO, WARRIOR, KNIGHT, BARRIER_MASTER)
+                                    // ターゲット選択が必要なスキル (HERO, WARRIOR, BARRIER_MASTER)
                                     showAttackTargetSelect(true); 
                                 }
                             }
@@ -1045,6 +1052,7 @@
                 const activePlayer = players.find(p => p.id === activePlayerId);
                 
                 let choices = [];
+                let message = '誰を対象にしますか？';
                 
                 // 魔法使いの強化魔法などはプレイヤー限定
                 if (filterType === 'PLAYER_ONLY') {
@@ -1054,6 +1062,13 @@
                         value: p.id, 
                         className: 'bg-green-600 text-white' 
                     }));
+                } else if (filterType === 'KNIGHT_GUARD') {
+                    // 騎士のかばう選択
+                    message = '誰からの攻撃をかばいますか？';
+                    choices = [
+                        { label: 'プレイヤーをかばう', value: 'GUARD_PLAYERS', className: 'bg-blue-600 text-white' },
+                        { label: '魔王をかばう', value: 'GUARD_BOSS', className: 'bg-red-600 text-white' }
+                    ];
                 } else {
                     // 通常は魔王 + 他プレイヤー
                     choices = [
@@ -1064,11 +1079,11 @@
 
                 setChoicePopup({
                     title: isSkill ? 'スキル対象選択' : '攻撃対象選択',
-                    message: '誰を対象にしますか？',
+                    message: message,
                     choices: choices,
                     onClose: (val) => {
                         setChoicePopup(null);
-                        if (val) handleBossAction({ type: isSkill ? 'SKILL' : 'ATTACK', targetId: val });
+                        if (val !== null && val !== undefined) handleBossAction({ type: isSkill ? 'SKILL' : 'ATTACK', targetId: val });
                     }
                 });
             };
@@ -1104,8 +1119,14 @@
                     newLog.push({ text: `${actor.name} の必殺スキル！「${role.ultimateSkill.name}」`, type: 'info' });
 
                     if (actor.roleKey === 'KNIGHT') { 
-                        currentState.knightTarget = actor.id; 
-                        newLog.push({ text: `>> 味方への攻撃を引きつける！`, type: 'info' }); 
+                        // 騎士のガードモード設定
+                        if (action.targetId === 'GUARD_PLAYERS') {
+                            currentState.knightGuard = { mode: 'GUARD_PLAYERS', knightId: actor.id };
+                            newLog.push({ text: `>> プレイヤーへの攻撃をかばう構え！`, type: 'info' });
+                        } else if (action.targetId === 'GUARD_BOSS') {
+                            currentState.knightGuard = { mode: 'GUARD_BOSS', knightId: actor.id };
+                            newLog.push({ text: `>> 魔王への攻撃をかばう構え！`, type: 'info' });
+                        }
                     }
                     else if (actor.roleKey === 'MONK') { 
                         const pIdx = nextPlayers.findIndex(p => p.id === actor.id);
@@ -1213,6 +1234,23 @@
                         if (skillName) newLog.push({ text: `${actor.name} の ${skillName}！`, type: 'info' });
 
                         if (action.targetId === 'BOSS') {
+                            // 騎士の魔王かばうチェック
+                            if (currentState.knightGuard && currentState.knightGuard.mode === 'GUARD_BOSS') {
+                                const knight = nextPlayers.find(p => p.id === currentState.knightGuard.knightId);
+                                if (knight && !knight.isDead) {
+                                    newLog.push({ text: `${knight.name} が魔王への攻撃をかばった！`, type: 'info' });
+                                    // DEF計算なしでダメージ
+                                    knight.currentHp -= currentDmg;
+                                    newLog.push({ text: `${knight.name} に ${currentDmg} ダメージ！(かばう)`, type: 'damage' });
+                                    if (knight.currentHp <= 0) {
+                                         knight.currentHp = 0;
+                                         knight.isDead = true;
+                                         newLog.push({ text: `${knight.name} はかばって力尽きた...`, type: 'death' });
+                                    }
+                                    return; // ダメージ処理終了
+                                }
+                            }
+
                             currentBossHP -= currentDmg;
                             newLog.push({ text: `魔王に ${currentDmg} ダメージ！`, type: 'damage' });
                             
@@ -1254,11 +1292,13 @@
                             const applyDamage = (target, rawDmg, ignoreDef = false) => {
                                 if (target.isDead) return;
                                 
-                                // かばう処理
-                                if (currentState.knightTarget && currentState.knightTarget !== target.id) {
-                                     const knight = nextPlayers.find(p => p.id === currentState.knightTarget);
+                                // 騎士のプレイヤーかばうチェック
+                                if (currentState.knightGuard && currentState.knightGuard.mode === 'GUARD_PLAYERS' && currentState.knightGuard.knightId !== target.id) {
+                                     const knight = nextPlayers.find(p => p.id === currentState.knightGuard.knightId);
                                      if (knight && !knight.isDead) {
-                                         newLog.push({ text: `${knight.name} が ${target.name} をかばった！`, type: 'info' });
+                                         // かばう発動（ターゲット変更）
+                                         // メッセージは全体攻撃などで何度も出るのを防ぐため、ログには一度だけ出すのが理想だが
+                                         // ここではシンプルに置換のみ行う（全体攻撃の場合は騎士が複数回受ける）
                                          target = knight; 
                                      }
                                 }
@@ -1266,7 +1306,13 @@
                                 const def = ignoreDef ? 0 : (target.level * ROLES[target.roleKey].def + (target.defBonus||0));
                                 const realDmg = Math.max(1, rawDmg - def);
                                 target.currentHp -= realDmg;
-                                newLog.push({ text: `${target.name} に ${realDmg} ダメージ！`, type: 'damage' });
+                                
+                                // かばった場合のログ調整等は複雑になるため、シンプルに誰が受けたかを表示
+                                if (currentState.knightGuard && currentState.knightGuard.mode === 'GUARD_PLAYERS' && target.id === currentState.knightGuard.knightId) {
+                                     newLog.push({ text: `${target.name} がかばって ${realDmg} ダメージを受けた！`, type: 'damage' });
+                                } else {
+                                     newLog.push({ text: `${target.name} に ${realDmg} ダメージ！`, type: 'damage' });
+                                }
                             };
 
                             if (action.type === 'ROAR') {
@@ -1537,25 +1583,25 @@
                                     )}
 
                                     {/* スキル情報表示 (2つ) */}
-                                    <div className="grid grid-cols-1 gap-1">
-                                        <div className={`p-2 rounded border border-slate-600 backdrop-blur-sm ${activePlayer.uniqueSkillUsed ? 'bg-slate-800/50 opacity-60' : 'bg-slate-800/80'}`}>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        <div className={`p-2 rounded border border-slate-600 backdrop-blur-sm ${activePlayer.uniqueSkillUsed ? 'bg-slate-800/50 opacity-60' : 'bg-slate-800/80'} h-full`}>
                                             <div className="flex justify-between items-center mb-1">
                                                 <span className={`font-bold text-yellow-400 ${phase === 'BOSS_SELECT' ? 'text-lg' : 'text-xs'}`}>固有: {ROLES[activePlayer.roleKey].uniqueSkill.name}</span>
                                                 <span className={`font-bold px-2 py-0.5 rounded ${activePlayer.uniqueSkillUsed ? 'bg-red-900 text-red-300' : 'bg-green-900 text-green-300'} text-[10px]`}>
                                                     {ROLES[activePlayer.roleKey].uniqueSkill.type === 'PASSIVE' ? '自動' : activePlayer.uniqueSkillUsed ? '使用済' : '未使用'}
                                                 </span>
                                             </div>
-                                            <p className="text-[10px] text-slate-300 truncate">{ROLES[activePlayer.roleKey].uniqueSkill.desc}</p>
+                                            <p className="text-[10px] text-slate-300 whitespace-pre-wrap break-words leading-tight">{formatSkillDesc(ROLES[activePlayer.roleKey].uniqueSkill.desc)}</p>
                                         </div>
                                         
-                                        <div className={`p-2 rounded border border-slate-600 backdrop-blur-sm ${activePlayer.ultimateSkillUsed ? 'bg-slate-800/50 opacity-60' : 'bg-slate-800/80'}`}>
+                                        <div className={`p-2 rounded border border-slate-600 backdrop-blur-sm ${activePlayer.ultimateSkillUsed ? 'bg-slate-800/50 opacity-60' : 'bg-slate-800/80'} h-full`}>
                                             <div className="flex justify-between items-center mb-1">
                                                 <span className={`font-bold text-red-400 ${phase === 'BOSS_SELECT' ? 'text-lg' : 'text-xs'}`}>必殺: {ROLES[activePlayer.roleKey].ultimateSkill.name}</span>
                                                 <span className={`font-bold px-2 py-0.5 rounded ${activePlayer.ultimateSkillUsed ? 'bg-red-900 text-red-300' : 'bg-green-900 text-green-300'} text-[10px]`}>
                                                     {activePlayer.ultimateSkillUsed ? '使用済' : '未使用'}
                                                 </span>
                                             </div>
-                                            <p className="text-[10px] text-slate-300 truncate">{ROLES[activePlayer.roleKey].ultimateSkill.desc}</p>
+                                            <p className="text-[10px] text-slate-300 whitespace-pre-wrap break-words leading-tight">{formatSkillDesc(ROLES[activePlayer.roleKey].ultimateSkill.desc)}</p>
                                         </div>
                                     </div>
 
