@@ -136,14 +136,6 @@
             }
         };
 
-        // --- ヘルパー関数 ---
-        const formatSkillDesc = (text) => {
-            if (!text) return "";
-            if (text.length <= 30) return text;
-            const regex = new RegExp(`.{1,30}`, 'g');
-            return text.match(regex).join('\n');
-        };
-
         // --- コンポーネント ---
         const RoleListModal = ({ isOpen, onClose }) => {
             if (!isOpen) return null;
@@ -210,7 +202,7 @@
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
                 <div className="bg-slate-800 border-2 border-yellow-500 rounded-xl p-6 max-w-md w-full text-center shadow-2xl modal-anim">
                     <h2 className="text-2xl font-bold mb-4 text-yellow-400">{title}</h2>
-                    <p className="text-lg mb-6 whitespace-pre-wrap text-slate-200">{formatSkillDesc(message)}</p>
+                    <p className="text-lg mb-6 whitespace-pre-wrap text-slate-200">{message}</p>
                     <div className="flex flex-col gap-3">
                         {choices.map((choice, idx) => (
                             <button 
@@ -291,7 +283,6 @@
                             {orderedPlayers.map((p) => (
                                 <div key={p.id} className={`flex-none w-20 bg-slate-800 rounded border ${p.isDead ? 'border-red-900 opacity-60' : 'border-slate-600'} p-1 flex flex-col justify-center gap-0.5 relative`}>
                                     <div className="flex justify-between items-center leading-none px-0.5 relative z-10">
-                                        {/* 画像を削除 */}
                                         <span className={`font-bold text-xs truncate flex-grow ${p.isDead ? 'text-red-500' : 'text-white'}`}>{p.name}</span>
                                         {p.isDead && <span className="text-[9px] text-red-500 font-black ml-0.5">†</span>}
                                     </div>
@@ -801,8 +792,8 @@
                                 let rise = q.rewardVal;
                                 if (p.trainingBonus) rise += 3;
 
-                                // 遊び人パッシブ: 遊びの極意 (50%で報酬2倍)
-                                if (p.roleKey === 'PLAYBOY' && Math.random() < 0.5) rise *= 2;
+                                // 修正：遊び人の経験値2倍パッシブを削除
+                                // (以前のコードにあった「if (p.roleKey === 'PLAYBOY' && Math.random() < 0.5) rise *= 2;」を削除)
 
                                 // 格闘家パッシブ: 孤独の修行 (1人でクリア時Lv+1)
                                 if (p.roleKey === 'MONK' && participantIds.length === 1) {
@@ -1028,7 +1019,7 @@
                             if (val === 'attack') showAttackTargetSelect();
                             else if (val === 'skill') {
                                 // ターゲット選択不要なスキル
-                                if (['CLERIC', 'MONK', 'SPIRIT', 'PLAYBOY', 'SAGE'].includes(activePlayer.roleKey)) {
+                                if (['CLERIC', 'MONK', 'SPIRIT', 'PLAYBOY', 'THIEF', 'SAGE'].includes(activePlayer.roleKey)) {
                                     // SAGEも攻撃対象固定または自分回復のみなら選択不要だが、魔王orプレイヤー選択がある場合は必要
                                     // 今回SAGEは魔王orプレイヤー選択なので、SAGEは選択必要リストへ
                                     handleBossAction({ type: 'SKILL' });
@@ -1042,7 +1033,7 @@
                                     // 騎士の場合、特殊な選択肢を表示
                                     showAttackTargetSelect(true, 'KNIGHT_GUARD');
                                 } else {
-                                    // ターゲット選択が必要なスキル (HERO, WARRIOR, BARRIER_MASTER, THIEF)
+                                    // ターゲット選択が必要なスキル (HERO, WARRIOR, KNIGHT, BARRIER_MASTER)
                                     showAttackTargetSelect(true); 
                                 }
                             }
@@ -1749,7 +1740,6 @@
                                             </div>
                                         ))}
                                     </div>
-                                    
                                     {/* 修正: 1ターン目は追放会議をスキップ。全滅時は魔王勝利画面へ */}
                                     {turn === 1 ? (
                                         <button onClick={() => {
