@@ -31,12 +31,12 @@
     <script type="text/babel">
         const { useState } = React;
 
-        // --- データ定義 (最新版反映) ---
+        // --- データ定義 (最新版完全同期) ---
         const ROLES = {
             HERO: { 
                 name: '勇者', atk: 3, hp: 4, def: 3, img: '勇者.png',
                 desc: '攻守ともに穴のないステータスが特徴',
-                uniqueSkill: { name: '勇者の試練', type: 'QUEST_ACTIVE', desc: '【ユニーク】次に選択する任意のクエストを必要人数に関係なく一人でクリアできる' },
+                uniqueSkill: { name: '勇者の試練', type: 'QUEST_ACTIVE', desc: '【ユニーク】次に選択するSランク以下の任意のクエストを必要人数に関係なく一人でクリアできる' },
                 ultimateSkill: { name: '聖なる斬撃', type: 'BOSS_ACTIVE', desc: '生き残っている味方陣営の合計ATK×1.5のダメージを与える' }
             },
             WARRIOR: { 
@@ -49,19 +49,19 @@
                 name: '魔法使い', atk: 4, hp: 3, def: 1, img: '魔法使い.png',
                 desc: '火力が高い魔法アタッカー',
                 uniqueSkill: { name: '魔法感知', type: 'QUEST_ACTIVE', desc: '【ユニーク】選択したプレイヤーの職業と陣営を盗み見ることができる' },
-                ultimateSkill: { name: '強化魔法', type: 'BOSS_ACTIVE', desc: '選択したプレイヤーのATK+10 DEF+5 する' }
+                ultimateSkill: { name: '強化魔法', type: 'BOSS_ACTIVE', desc: '選択したプレイヤーのATK+10 DEF+5 する(永続)' }
             },
             CLERIC: { 
                 name: '僧侶', atk: 1, hp: 5, def: 2, img: '僧侶.png',
                 desc: '回復が得意なサポーター',
                 uniqueSkill: { name: '慈愛の悟り', type: 'QUEST_ACTIVE', desc: '【ユニーク】選択したプレイヤーを強制的に勇者陣営へと変更させる' },
-                ultimateSkill: { name: '回復魔法', type: 'BOSS_ACTIVE', desc: 'プレイヤー全員のHPをプレイヤー数×4回復させる' }
+                ultimateSkill: { name: '回復魔法', type: 'BOSS_ACTIVE', desc: 'プレイヤー全員のHPをプレイヤー数×4回復させる(上限あり)' }
             },
             KNIGHT: { 
                 name: '騎士', atk: 2, hp: 4, def: 4, img: '騎士.png',
                 desc: '耐久力が魅力のディフェンダー',
                 uniqueSkill: { name: '屈強な肉体', type: 'PASSIVE', desc: '【パッシブ】クエストに参加時自身が受けるダメージを1軽減させる' },
-                ultimateSkill: { name: 'かばう', type: 'BOSS_ACTIVE', desc: '魔王からの攻撃か、プレイヤーからの攻撃を選択して自分に集中させる' }
+                ultimateSkill: { name: 'かばう', type: 'BOSS_ACTIVE', desc: '魔王からの攻撃か、プレイヤーからの攻撃を選択して自分に集中させる(自身のDEF無視)' }
             },
             MONK: { 
                 name: '格闘家', atk: 5, hp: 3, def: 0, img: '武闘家.png',
@@ -70,7 +70,7 @@
                 ultimateSkill: { name: '正拳突き', type: 'BOSS_ACTIVE', desc: '1ターンのためが必要だが次のターン魔王もしくはプレイヤーに現在のATK×3.5ダメージを与える攻撃を行う' }
             },
             THIEF: { 
-                name: '盗賊', atk: 3, hp: 3, def: 2, img: '盗賊.png',
+                name: '盗賊', atk: 3, hp: 4, def: 2, img: '盗賊.png',
                 desc: 'トリッキーな動きで場を攪乱する',
                 uniqueSkill: { name: '盗賊の極意', type: 'QUEST_ACTIVE', desc: '【ユニーク】指定したプレイヤーと陣営を入れ替えることができる' },
                 ultimateSkill: { name: '急所一閃', type: 'BOSS_ACTIVE', desc: '魔王の最大HPの1/5のダメージを与える。プレイヤーを選択した場合はATK×5ダメージ' }
@@ -96,31 +96,33 @@
             SAGE: {
                 name: '賢者', atk: 4, hp: 4, def: 2, img: '賢者.png',
                 desc: '圧倒的な知識と魔力を持つ上級職',
-                uniqueSkill: { name: '叡智の定式', type: 'PASSIVE', desc: '【パッシブ】クエストを成功するたびにHPとATKが+1される' },
-                ultimateSkill: { name: '星辰の審判', type: 'BOSS_ACTIVE', desc: '魔王もしくはプレイヤーに固定100ダメージを与え自身のHPを20回復' }
+                uniqueSkill: { name: '叡智の定式', type: 'PASSIVE', desc: '【パッシブ】クエストを成功するたびにHPとATKが+1される(永続)' },
+                ultimateSkill: { name: '星辰の審判', type: 'BOSS_ACTIVE', desc: '魔王もしくはプレイヤーに固定100ダメージを与え自身のHPを20回復(上限あり)' }
             }
         };
 
         // --- UIコンポーネント ---
 
-        const MockCard = ({ title, sub, color = "text-white", borderColor = "border-slate-600" }) => (
+        const MockCard = ({ title, sub, color = "text-white", borderColor = "border-slate-600", req = "4" }) => (
             <div className={`bg-slate-800 p-2 rounded-xl border-2 ${borderColor} relative shadow-md w-full max-w-[260px] mx-auto transform hover:scale-105 transition`}>
-                <div className="flex justify-between items-center mb-1">
-                    <div className={`font-black text-lg ${color}`}>{title}</div>
-                    <div className="flex items-center gap-1">
-                         <span className="text-red-400 font-bold text-xs bg-red-900/30 px-1.5 py-0.5 rounded border border-red-500/30 whitespace-nowrap">
-                            HP -2
-                         </span>
-                         <div className="bg-slate-900/80 px-2 py-0.5 rounded border border-slate-600 text-center">
-                            <span className="text-[9px] text-slate-400 block leading-none">必要</span>
-                            <span className="text-base font-black text-white leading-none">4</span>
-                        </div>
+                {/* デザイン変更反映: ダメージと人数を右上に */}
+                <div className="absolute top-0 right-0 flex z-20">
+                    <div className="bg-red-900/80 px-2 py-1 border-b border-l border-red-700 flex items-center">
+                        <span className="text-xs text-red-200 font-bold">-2 HP</span>
+                    </div>
+                    <div className="bg-slate-900/90 px-2 py-1 rounded-bl-xl border-b border-l border-slate-600 flex items-center">
+                        <span className="text-[9px] text-slate-400 mr-1">必要</span>
+                        <span className="text-lg font-black text-white">{req}</span>
+                        <span className="text-xs text-slate-400 ml-0.5">{req === '∞' ? '' : '人'}</span>
                     </div>
                 </div>
-                <div className="flex items-center justify-between">
-                    <div className="text-xs text-white font-bold">報酬: Lv +3</div>
-                    <div className="text-xs font-bold text-yellow-200 bg-slate-700/50 px-2 py-0.5 rounded">{sub}</div>
+
+                <div className="mt-1 relative z-10 mb-2">
+                    <div className={`font-black text-lg ${color} mb-1`}>{title}</div>
+                    <div className="text-base text-yellow-400 font-bold">報酬 Lv+3 <span className="text-slate-400 text-sm ml-2">({sub})</span></div>
                 </div>
+                
+                <div className="absolute bottom-2 right-2 px-2 py-0.5 text-sm text-blue-400 font-bold bg-slate-900 rounded border border-blue-900 z-20">タップで参加</div>
             </div>
         );
 
@@ -239,6 +241,7 @@
                                         <p className="text-slate-400 text-sm mb-4">
                                             クエストの結果を見て議論し、怪しいプレイヤーを<span className="text-red-500 font-bold">多数決で追放</span>します。<br/>
                                             追放されたプレイヤーは死亡扱いとなりますが、正体は明かされません。
+                                            ※生存者が2名以下の場合はスキップされます。
                                         </p>
                                         <div className="bg-slate-900/50 p-3 rounded border border-slate-600 text-center">
                                             <span className="text-red-400 font-bold text-lg">👿 誰を追放する？</span>
@@ -284,7 +287,7 @@
                             </div>
                         </section>
 
-                        {/* クエストデータ詳細 (新規追加) */}
+                        {/* クエストデータ詳細 */}
                         <section className="bg-slate-900/60 rounded-2xl p-6 border border-slate-700 shadow-2xl mb-12">
                             <h2 className="text-3xl md:text-4xl font-black text-yellow-500 mb-8 text-center flex items-center justify-center gap-3">
                                 <span className="text-4xl">📜</span> クエストデータ詳細
@@ -301,6 +304,13 @@
                                         </tr>
                                     </thead>
                                     <tbody>
+                                         <tr className="border-b border-yellow-600 bg-yellow-900/20 hover:bg-yellow-900/30">
+                                            <td className="px-4 py-3 font-bold text-yellow-400">SS (レアモンスター)</td>
+                                            <td className="px-4 py-3 text-yellow-200">最終ターン確定</td>
+                                            <td className="px-4 py-3">制限なし (成功率20%)</td>
+                                            <td className="px-4 py-3 text-yellow-400">+5</td>
+                                            <td className="px-4 py-3 text-white font-bold">0</td>
+                                        </tr>
                                         <tr className="border-b border-slate-700 hover:bg-slate-800/50">
                                             <td className="px-4 py-3 font-bold text-red-500">S (女王の依頼)</td>
                                             <td className="px-4 py-3">10%</td>
@@ -335,7 +345,7 @@
                             </div>
                         </section>
 
-                        {/* 魔王・ゲームデータ詳細 (職業図鑑の下に移動) */}
+                        {/* 魔王・ゲームデータ詳細 */}
                         <section className="bg-slate-900/60 rounded-2xl p-6 border border-slate-700 shadow-2xl">
                             <h2 className="text-3xl md:text-4xl font-black text-red-500 mb-8 text-center flex items-center justify-center gap-3">
                                 <span className="text-4xl">👿</span> 魔王・ゲームデータ詳細
@@ -350,7 +360,7 @@
                                             <tbody>
                                                 <tr className="border-b border-slate-700"><th className="py-2 text-slate-400">日数 (ターン数)</th><td className="py-2 font-bold">プレイ人数と同じ日数</td></tr>
                                                 <tr className="border-b border-slate-700"><th className="py-2 text-slate-400">魔王戦 制限</th><td className="py-2 font-bold">3ラウンド耐久 または 魔王討伐</td></tr>
-                                                <tr><th className="py-2 text-slate-400">魔王の基本攻撃力</th><td className="py-2 font-bold text-red-400">ゲーム開始時の人数 × 3</td></tr>
+                                                <tr><th className="py-2 text-slate-400">魔王の基本攻撃力</th><td className="py-2 font-bold text-red-400">初期プレイ人数 × 3</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -375,7 +385,7 @@
                                             <div className="w-12 text-center font-bold text-sm pt-1 text-slate-500">50%</div>
                                             <div>
                                                 <div className="text-red-300 font-bold">通常攻撃</div>
-                                                <div className="text-xs text-slate-400">ランダムな対象(人数-2名)に <span className="text-white font-bold">基本攻撃力 × 2</span> の物理ダメージ</div>
+                                                <div className="text-xs text-slate-400">ランダムな対象(初期人数-2名)に <span className="text-white font-bold">基本攻撃力 × 2</span> の物理ダメージ</div>
                                             </div>
                                         </div>
                                         <div className="flex gap-3 items-start bg-slate-900/50 p-3 rounded border border-slate-700">
