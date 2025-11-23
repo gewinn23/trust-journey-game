@@ -78,7 +78,7 @@
             HERO: { 
                 name: '勇者', atk: 3, hp: 4, def: 3, img: '勇者.png',
                 desc: '攻守ともに穴のないステータスが特徴',
-                uniqueSkill: { name: '勇者の試練', type: 'QUEST_ACTIVE', desc: '【ユニーク】次に選択する任意のクエストを必要人数に関係なく一人でクリアできる' },
+                uniqueSkill: { name: '勇者の試練', type: 'QUEST_ACTIVE', desc: '【ユニーク】次に選択するSランク以下の任意のクエストを必要人数に関係なく一人でクリアできる' },
                 ultimateSkill: { name: '聖なる斬撃', type: 'BOSS_ACTIVE', desc: '生き残っている味方陣営の合計ATK×1.5のダメージを与える' }
             },
             WARRIOR: { 
@@ -481,98 +481,81 @@
             };
 
             const generateQuests = (existingQuests = [], targetCount = 4, currentPlayers = players) => {
-                // 現在のターン数ではなく、次(この生成でプレイされる)のターン数で判定するために+1した状態を想定
-                // しかしgenerateQuestsはstartNewTurn内でsetTurnの前に呼ばれることが多い
-                // startNewTurn内で turn < maxTurn の場合に generateQuests を呼ぶ
-                // 最終ターン(turn == maxTurn)のクエストボード生成時のみSS確定
-                
-                // ここでは、現在のクエストリストを更新する
                 const currentCount = existingQuests.length;
                 const needed = targetCount - currentCount;
-                
-                // 修正: generateQuestsは参照透過ではなくsetQuestsを行う副作用関数として実装されている
-                // 呼び出し元で制御するのが理想だが、既存ロジックを踏襲
-                
-                let newQuests = [...existingQuests];
-                
-                // 最終ターンの特別処理: turnが maxTurn-1 のときに呼ばれると、次のターン(maxTurn)用のクエストを作る
-                // Reactのstate更新前なので turn は現在の値。
-                // 例: maxTurn=4, turn=3 (3日目終了時) -> 4日目(最終日)のクエスト生成
-                const isFinalTurnNext = (turn === maxTurn - 1);
+                if (needed <= 0) { setQuests(existingQuests); return; }
 
+                const ranks = [
+                    { id: 'S', label: 'S: 女王の依頼', reqDiff: 0, rewardVal: 4, damageVal: 6, color: 'text-red-600', borderColor: 'border-red-600' },
+                    { id: 'A', label: 'A: 王国防衛', reqDiff: -1, rewardVal: 3, damageVal: 4, color: 'text-red-400', borderColor: 'border-red-400' },
+                    { id: 'B', label: 'B: 砦奪還', reqDiff: -2, rewardVal: 2, damageVal: 2, color: 'text-orange-400', borderColor: 'border-orange-400' },
+                    { id: 'C', label: 'C: モンスター討伐', reqDiff: -3, rewardVal: 1, damageVal: 1, color: 'text-yellow-300', borderColor: 'border-yellow-300' }
+                ];
+
+                const newQuests = [...existingQuests];
+                const usedMonsters = new Set(existingQuests.map(q => q.monsterName));
+
+                const aliveCount = currentPlayers.length > 0 ? currentPlayers.filter(p => !p.isDead).length : 4;
+
+                for (let i = 0; i < needed; i++) {
+                    const r = Math.random();
+                    let rank = r > 0.9 ? ranks[0] : r > 0.7 ? ranks[1] : r > 0.4 ? ranks[2] : ranks[3];
+                    
+                    const monsterList = MONSTERS[rank.id];
+                    let monsterName = "";
+                    let attempts = 0;
+                    do {
+                        monsterName = monsterList[Math.floor(Math.random() * monsterList.length)];
+                        attempts++;
+                    } while (usedMonsters.has(monsterName) && attempts < 20);
+                    usedMonsters.add(monsterName);
+                    
+                    let req = Math.max(1, aliveCount + rank.reqDiff); 
+                    
+                    // Sランク以上なら画像を設定
+                    let img = null;
+                    if (rank.id === 'S') {
+                             img = MONSTER_IMAGES[monsterName];
+                    }
+
+                    newQuests.push({
+                        id: Date.now() + i + Math.random(), 
+                        title: rank.label,
+                        req: req,
+                        rewardVal: rank.rewardVal,
+                        damageVal: rank.damageVal,
+                        color: rank.color,
+                        borderColor: rank.borderColor,
+                        rank: rank.id,
+                        monsterName: monsterName,
+                        img: img
+                    });
+                }
+                
+                // 最終ターン用にSSランクを強制上書きするロジック
+                const isFinalTurnNext = (turn === maxTurn - 1);
                 if (isFinalTurnNext) {
-                    // 既にSSがあるかチェック
-                    const hasSS = newQuests.some(q => q.rank === 'SS');
-                    if (!hasSS) {
-                         // 必ず1つSSを入れる
-                         newQuests = []; // 既存をクリアして新規作成（仕様によるが、日が変わるタイミングなのでクリアでOK）
-                         
-                         // SSランク追加
-                         newQuests.push({
+                     // SSランクがなければ1つ置き換える（あるいは追加する）
+                     const hasSS = newQuests.some(q => q.rank === 'SS');
+                     if (!hasSS && newQuests.length > 0) {
+                         // ランダムな位置のクエストをSSに置き換える
+                         const replaceIdx = Math.floor(Math.random() * newQuests.length);
+                         newQuests[replaceIdx] = {
                             id: Date.now() + 999, 
                             title: 'SS: レアモンスター襲来',
-                            req: 0, // 0 = 制限なし
+                            req: 1, // 修正: 最低必要人数は1
                             rewardVal: 5,
                             damageVal: 0,
                             color: 'text-yellow-500',
                             borderColor: 'border-yellow-500',
                             rank: 'SS',
                             monsterName: 'レアスライム',
-                            img: 'レアスライム.png'
-                        });
-                    }
+                            img: MONSTER_IMAGES['レアスライム'],
+                            bgColor: 'bg-yellow-900/40' // 背景色追加
+                        };
+                     }
                 }
 
-                // 必要数まで補充
-                const currentNeeded = targetCount - newQuests.length;
-                
-                if (currentNeeded > 0) {
-                    const ranks = [
-                        { id: 'S', label: 'S: 女王の依頼', reqDiff: 0, rewardVal: 4, damageVal: 6, color: 'text-red-600', borderColor: 'border-red-600' },
-                        { id: 'A', label: 'A: 王国防衛', reqDiff: -1, rewardVal: 3, damageVal: 4, color: 'text-red-400', borderColor: 'border-red-400' },
-                        { id: 'B', label: 'B: 砦奪還', reqDiff: -2, rewardVal: 2, damageVal: 2, color: 'text-orange-400', borderColor: 'border-orange-400' },
-                        { id: 'C', label: 'C: モンスター討伐', reqDiff: -3, rewardVal: 1, damageVal: 1, color: 'text-yellow-300', borderColor: 'border-yellow-300' }
-                    ];
-                    
-                    const usedMonsters = new Set(newQuests.map(q => q.monsterName));
-                    const aliveCount = currentPlayers.length > 0 ? currentPlayers.filter(p => !p.isDead).length : 4;
-
-                    for (let i = 0; i < currentNeeded; i++) {
-                        const r = Math.random();
-                        let rank = r > 0.9 ? ranks[0] : r > 0.7 ? ranks[1] : r > 0.4 ? ranks[2] : ranks[3];
-                        
-                        const monsterList = MONSTERS[rank.id];
-                        let monsterName = "";
-                        let attempts = 0;
-                        do {
-                            monsterName = monsterList[Math.floor(Math.random() * monsterList.length)];
-                            attempts++;
-                        } while (usedMonsters.has(monsterName) && attempts < 20);
-                        usedMonsters.add(monsterName);
-                        
-                        let req = Math.max(1, aliveCount + rank.reqDiff); 
-                        
-                        // Sランク以上なら画像を設定
-                        let img = null;
-                        if (rank.id === 'S') {
-                             img = MONSTER_IMAGES[monsterName];
-                        }
-
-                        newQuests.push({
-                            id: Date.now() + i + Math.random(), 
-                            title: rank.label,
-                            req: req,
-                            rewardVal: rank.rewardVal,
-                            damageVal: rank.damageVal,
-                            color: rank.color,
-                            borderColor: rank.borderColor,
-                            rank: rank.id,
-                            monsterName: monsterName,
-                            img: img
-                        });
-                    }
-                }
-                
                 setQuests(newQuests);
             };
 
@@ -581,19 +564,18 @@
                     startBossPhase();
                     return;
                 }
-                // クエスト再生成 (クリアされたものを除外するのではなく、日が変わるので一新する仕様に変更した方がSS確定ロジックと相性が良い)
-                // ただし元のロジック(remainingQuests)を活かすなら、SSが出現する日は強制リセット
                 
+                // クエストリストを更新
+                // 最終ターン直前なら全て作り直してSSを入れる
                 let nextTurnQuests = [];
                 if (turn === maxTurn - 1) {
-                    // 最終ターンへ移行する場合は空にして generateQuests で SS を含めて生成させる
-                    nextTurnQuests = [];
+                     nextTurnQuests = []; // generateQuestsで4つ生成され、そのうち1つがSSになる
                 } else {
-                    // 通常ターン
+                    // 通常ターンはクリアされたものを除外して補充
                     nextTurnQuests = quests.filter(q => !clearedQuestIds.includes(q.id));
                 }
                 
-                generateQuests(nextTurnQuests, 4);
+                generateQuests(nextTurnQuests, 4, players);
                 setTurn(t => t + 1);
                 setTimeLeft(180);
                 setPhase('STRATEGY');
@@ -772,8 +754,8 @@
 
             const handleQuestClick = (quest) => {
                 const activePlayer = players.find(p => p.id === activePlayerId);
-                // 勇者の試練 (固有スキル)
-                if (activePlayer.roleKey === 'HERO' && !activePlayer.uniqueSkillUsed) {
+                // 勇者の試練 (固有スキル) - SSランクは対象外
+                if (activePlayer.roleKey === 'HERO' && !activePlayer.uniqueSkillUsed && quest.rank !== 'SS') {
                     setChoicePopup({
                         title: '行動選択',
                         message: `「${quest.title}」に対してどう行動しますか？`,
@@ -1103,6 +1085,8 @@
                             else if (val === 'skill') {
                                 // ターゲット選択不要なスキル
                                 if (['CLERIC', 'MONK', 'SPIRIT', 'PLAYBOY'].includes(activePlayer.roleKey)) {
+                                    // SAGEも攻撃対象固定または自分回復のみなら選択不要だが、魔王orプレイヤー選択がある場合は必要
+                                    // 今回SAGEは魔王orプレイヤー選択なので、SAGEは選択必要リストへ
                                     handleBossAction({ type: 'SKILL' });
                                 } else if (activePlayer.roleKey === 'SAGE') {
                                     // SAGEは対象選択が必要
@@ -1749,7 +1733,7 @@
                                                          </span>
                                                          <div className="bg-slate-900/80 px-3 py-1 rounded border border-slate-600 text-center">
                                                             <span className="text-[10px] text-slate-400 block leading-none">必要</span>
-                                                            <span className="text-lg font-black text-white leading-none">{q.req}</span>
+                                                            <span className="text-lg font-black text-white leading-none">{q.req === 0 ? '∞' : q.req}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1775,7 +1759,7 @@
                                     <div className="flex-grow overflow-y-auto pr-1 pb-4">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             {quests.map(q => (
-                                                <div key={q.id} onClick={() => handleQuestClick(q)} className={`bg-slate-800 p-2 rounded-xl border-2 ${q.borderColor} active:bg-slate-700 cursor-pointer relative shadow-md hover:scale-[1.01] transition overflow-hidden`}>
+                                                <div key={q.id} onClick={() => handleQuestClick(q)} className={`bg-slate-800 p-2 rounded-xl border-2 ${q.borderColor} active:bg-slate-700 cursor-pointer relative shadow-md hover:scale-[1.01] transition overflow-hidden ${q.bgColor || ''}`}>
                                                     {/* 修正: ダメージと必要人数を右上に並べて配置 */}
                                                     <div className="absolute top-0 right-0 flex z-20">
                                                         {/* ダメージ */}
@@ -1795,10 +1779,10 @@
                                                         <div className="text-base text-yellow-400 font-bold">報酬 Lv+{q.rewardVal} <span className="text-slate-400 text-sm ml-2">({q.monsterName})</span></div>
                                                     </div>
                                                     
-                                                    {/* 画像エリア追加 */}
+                                                    {/* 画像エリア追加: Sランク以上は背景として薄く表示 */}
                                                     {q.img && (
-                                                        <div className="absolute bottom-0 right-0 w-24 h-24 opacity-40 pointer-events-none z-0">
-                                                            <img src={q.img} alt={q.monsterName} className="w-full h-full object-contain object-right-bottom" onError={(e) => e.target.style.display = 'none'} />
+                                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                                                            <img src={q.img} alt={q.monsterName} className="w-24 h-24 object-contain opacity-30" onError={(e) => e.target.style.display = 'none'} />
                                                         </div>
                                                     )}
                                                     
@@ -1980,7 +1964,7 @@
                                         <div className="text-5xl font-black text-white mb-4">{bossNextAction?.name}</div>
                                         <div className="text-2xl text-slate-300">{bossNextAction?.desc}</div>
                                         <div className="text-xl text-orange-400 font-bold mt-4 bg-slate-900/50 p-2 rounded">
-                                            {getBossActionDetail(bossNextAction, bossInitialPlayerCount)}
+                                            {getBossActionDetail(bossNextAction, playerCount)}
                                         </div>
                                     </div>
 
