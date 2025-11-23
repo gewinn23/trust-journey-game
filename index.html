@@ -45,13 +45,8 @@
                 "しかし、その中には魔王に魂を売った「裏切り者」が紛れ込んでいるとのうわさが....",
                 "裏切者を追放し、クエストをクリアしてレベルを上げ魔王を討伐しよう！"
             ],
-            OVERVIEW: "このゲームでは仲間とクエストをクリアしてレベルを上げ、裏切者に邪魔されることなく魔王を討伐することが目的のゲームです。\n様々なスキルや職業ごとのステータスを活用し、勇者陣営は魔王討伐を目指し魔王陣営は魔王討伐を阻止しましょう。",
-            FLOW: [
-                "1.職業確認: 自分の役職と陣営を密かに確認します。",
-                "2.クエスト: 全員で協力してレベルを上げます。しかし裏切り者は...？",
-                "3.追放会議: 怪しい人物を多数決で追放する会議を行います。",
-                "4.魔王討伐: 鍛えた力で魔王に挑みます。3ターン以内に撃破することができれば討伐成功です。"
-            ],
+            // OVERVIEWはJSX内で直接記述するため削除
+            // FLOWは削除
             NOTE: "※職業ごとにスキルが存在し、裏切者を発見するスキルや魔王討伐の際に有効なスキルなど様々なものが存在ます。"
         };
 
@@ -1351,22 +1346,25 @@
 
                         <div className="border-t border-slate-700 pt-4">
                             <h3 className="text-xl font-bold text-yellow-400 mb-2">ゲーム概要</h3>
-                            <p className="text-sm md:text-base text-slate-300 whitespace-pre-wrap">{GAME_TEXTS.OVERVIEW}</p>
+                            <p className="text-sm md:text-base text-slate-300 whitespace-pre-wrap leading-relaxed">
+                                このゲームでは仲間とクエストをクリアしてレベルを上げ、裏切者に邪魔されることなく魔王を討伐することが目的のゲームです。<br/>
+                                様々なスキルや職業ごとのステータスを活用し、<span className="text-blue-400 font-bold">勇者陣営</span>は魔王討伐を目指し<span className="text-red-500 font-bold">魔王陣営</span>は魔王討伐を阻止しましょう。
+                            </p>
                         </div>
-
-                        <div className="border-t border-slate-700 pt-4">
-                            <h3 className="text-xl font-bold text-yellow-400 mb-2">ゲームの流れ</h3>
-                            <ul className="list-none space-y-3 text-sm md:text-base text-slate-300">
-                                {GAME_TEXTS.FLOW.map((line, i) => (
-                                    <li key={i}><span className="font-bold text-white bg-slate-700 px-2 py-1 rounded mr-2">{line.split(':')[0]}</span>{line.split(':')[1]}</li>
-                                ))}
-                            </ul>
-                            <p className="text-xs text-slate-400 mt-2">{GAME_TEXTS.NOTE}</p>
-                        </div>
+                        
+                        {/* ゲームの流れセクションは削除 */}
+                        <p className="text-xs text-slate-400 mt-2 border-t border-slate-800 pt-2">{GAME_TEXTS.NOTE}</p>
                     </div>
-                    <button onClick={() => setPhase('SETUP')} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-12 py-4 rounded-full text-2xl font-bold shadow-lg transform transition hover:scale-105 flex-none">
-                        冒険を始める
-                    </button>
+
+                    {/* ボタンエリア */}
+                    <div className="flex flex-col md:flex-row gap-4 items-center justify-center flex-none">
+                        <button onClick={() => setPhase('SETUP')} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-12 py-4 rounded-full text-2xl font-bold shadow-lg transform transition hover:scale-105">
+                            冒険を始める
+                        </button>
+                        <a href="guide.html" target="_blank" className="bg-slate-700 hover:bg-slate-600 text-white px-8 py-4 rounded-full text-xl font-bold shadow-lg border border-slate-500 transition flex items-center gap-2">
+                            <span>📖</span> 公式ガイドを見る
+                        </a>
+                    </div>
                 </div>
             );
 
@@ -1472,7 +1470,7 @@
 
                                 <div className="relative z-10">
                                     {phase === 'ROLE_CONFIRM' ? (
-                                        <div className={`mb-4 p-3 rounded-xl text-center font-black text-3xl border-4 shadow-xl ${activePlayer.realTeam === 'HERO' ? 'bg-blue-900/90 border-blue-400 text-blue-200' : 'bg-red-900/90 border-red-500 text-red-200'}`}>
+                                        <div className={`mb-4 p-4 rounded-xl text-center font-black text-4xl border-4 shadow-xl ${activePlayer.realTeam === 'HERO' ? 'bg-blue-900/90 border-blue-400 text-blue-200' : 'bg-red-900/90 border-red-500 text-red-200'}`}>
                                             {activePlayer.realTeam === 'HERO' ? '勇者陣営' : '魔王陣営'}
                                         </div>
                                     ) : (
@@ -1547,7 +1545,7 @@
                                                     {ROLES[activePlayer.roleKey].uniqueSkill.type === 'PASSIVE' ? '自動' : activePlayer.uniqueSkillUsed ? '使用済' : '未使用'}
                                                 </span>
                                             </div>
-                                            <p className="text-[10px] text-slate-300 whitespace-pre-wrap break-words leading-tight">{ROLES[activePlayer.roleKey].uniqueSkill.desc}</p>
+                                            <p className="text-[10px] text-slate-300 truncate">{ROLES[activePlayer.roleKey].uniqueSkill.desc}</p>
                                         </div>
                                         
                                         <div className={`p-2 rounded border border-slate-600 backdrop-blur-sm ${activePlayer.ultimateSkillUsed ? 'bg-slate-800/50 opacity-60' : 'bg-slate-800/80'}`}>
@@ -1557,7 +1555,7 @@
                                                     {activePlayer.ultimateSkillUsed ? '使用済' : '未使用'}
                                                 </span>
                                             </div>
-                                            <p className="text-[10px] text-slate-300 whitespace-pre-wrap break-words leading-tight">{ROLES[activePlayer.roleKey].ultimateSkill.desc}</p>
+                                            <p className="text-[10px] text-slate-300 truncate">{ROLES[activePlayer.roleKey].ultimateSkill.desc}</p>
                                         </div>
                                     </div>
 
