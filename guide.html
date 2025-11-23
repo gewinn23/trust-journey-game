@@ -31,25 +31,25 @@
     <script type="text/babel">
         const { useState } = React;
 
-        // --- データ定義 ---
+        // --- データ定義 (最新版反映) ---
         const ROLES = {
             HERO: { 
                 name: '勇者', atk: 3, hp: 4, def: 3, img: '勇者.png',
                 desc: '攻守ともに穴のないステータスが特徴',
                 uniqueSkill: { name: '勇者の試練', type: 'QUEST_ACTIVE', desc: '【ユニーク】次に選択する任意のクエストを必要人数に関係なく一人でクリアできる' },
-                ultimateSkill: { name: '聖なる斬撃', type: 'BOSS_ACTIVE', desc: '生き残っている味方陣営の人数×10+自身のATKのダメージを与える' }
+                ultimateSkill: { name: '聖なる斬撃', type: 'BOSS_ACTIVE', desc: '生き残っている味方陣営の合計ATK×1.5のダメージを与える' }
             },
             WARRIOR: { 
                 name: '戦士', atk: 4, hp: 3, def: 2, img: '戦士.png',
                 desc: 'バランスのいいアタッカー',
                 uniqueSkill: { name: '戦士の証', type: 'PASSIVE', desc: '【パッシブ】クエストを成功するたびにATKが+1される' },
-                ultimateSkill: { name: '渾身斬り', type: 'BOSS_ACTIVE', desc: '魔王もしくはプレイヤーに現在のATK×2ダメージを与える' }
+                ultimateSkill: { name: '渾身斬り', type: 'BOSS_ACTIVE', desc: '魔王もしくはプレイヤーに現在のATK×2.5ダメージを与える' }
             },
             MAGE: { 
                 name: '魔法使い', atk: 4, hp: 3, def: 1, img: '魔法使い.png',
                 desc: '火力が高い魔法アタッカー',
                 uniqueSkill: { name: '魔法感知', type: 'QUEST_ACTIVE', desc: '【ユニーク】選択したプレイヤーの職業と陣営を盗み見ることができる' },
-                ultimateSkill: { name: '強化魔法', type: 'BOSS_ACTIVE', desc: '選択したプレイヤーのATK+7 DEF+7 する' }
+                ultimateSkill: { name: '強化魔法', type: 'BOSS_ACTIVE', desc: '選択したプレイヤーのATK+10 DEF+5 する' }
             },
             CLERIC: { 
                 name: '僧侶', atk: 1, hp: 5, def: 2, img: '僧侶.png',
@@ -61,13 +61,13 @@
                 name: '騎士', atk: 2, hp: 4, def: 4, img: '騎士.png',
                 desc: '耐久力が魅力のディフェンダー',
                 uniqueSkill: { name: '屈強な肉体', type: 'PASSIVE', desc: '【パッシブ】クエストに参加時自身が受けるダメージを1軽減させる' },
-                ultimateSkill: { name: 'かばう', type: 'BOSS_ACTIVE', desc: 'このターン中、魔王もしくはプレイヤー1名からの攻撃を自分に集中させる' }
+                ultimateSkill: { name: 'かばう', type: 'BOSS_ACTIVE', desc: '魔王からの攻撃か、プレイヤーからの攻撃を選択して自分に集中させる' }
             },
             MONK: { 
                 name: '格闘家', atk: 5, hp: 3, def: 0, img: '武闘家.png',
                 desc: '高火力アタッカー。耐久力が課題',
                 uniqueSkill: { name: '孤独の修行', type: 'PASSIVE', desc: '【パッシブ】クエストを自分一人でクリアしたとき、上がるレベルに+1される' },
-                ultimateSkill: { name: '正拳突き', type: 'BOSS_ACTIVE', desc: '1ターンのためが必要だが次のターン魔王もしくはプレイヤーに現在のATK×4ダメージを与える攻撃を行う' }
+                ultimateSkill: { name: '正拳突き', type: 'BOSS_ACTIVE', desc: '1ターンのためが必要だが次のターン魔王もしくはプレイヤーに現在のATK×3.5ダメージを与える攻撃を行う' }
             },
             THIEF: { 
                 name: '盗賊', atk: 3, hp: 3, def: 2, img: '盗賊.png',
@@ -104,17 +104,22 @@
         // --- UIコンポーネント ---
 
         const MockCard = ({ title, sub, color = "text-white", borderColor = "border-slate-600" }) => (
-            <div className={`bg-slate-800 p-3 rounded-xl border-2 ${borderColor} relative shadow-md w-full max-w-[280px] mx-auto transform hover:scale-105 transition`}>
-                <div className="flex justify-between items-center mb-2">
+            <div className={`bg-slate-800 p-2 rounded-xl border-2 ${borderColor} relative shadow-md w-full max-w-[260px] mx-auto transform hover:scale-105 transition`}>
+                <div className="flex justify-between items-center mb-1">
                     <div className={`font-black text-lg ${color}`}>{title}</div>
-                    <div className="bg-slate-900/80 px-3 py-1 rounded border border-slate-600 text-center">
-                        <span className="text-[10px] text-slate-400 block leading-none">必要</span>
-                        <span className="text-lg font-black text-white leading-none">4</span>
+                    <div className="flex items-center gap-1">
+                         <span className="text-red-400 font-bold text-xs bg-red-900/30 px-1.5 py-0.5 rounded border border-red-500/30 whitespace-nowrap">
+                            HP -2
+                         </span>
+                         <div className="bg-slate-900/80 px-2 py-0.5 rounded border border-slate-600 text-center">
+                            <span className="text-[9px] text-slate-400 block leading-none">必要</span>
+                            <span className="text-base font-black text-white leading-none">4</span>
+                        </div>
                     </div>
                 </div>
                 <div className="flex items-center justify-between">
                     <div className="text-xs text-white font-bold">報酬: Lv +3</div>
-                    <div className="text-xs font-bold text-yellow-200 bg-slate-700/50 px-2 py-1 rounded">{sub}</div>
+                    <div className="text-xs font-bold text-yellow-200 bg-slate-700/50 px-2 py-0.5 rounded">{sub}</div>
                 </div>
             </div>
         );
@@ -155,15 +160,15 @@
         const App = () => {
             return (
                 <div className="min-h-screen bg-slate-950 text-slate-200 font-sans pb-20">
-                    {/* ヘッダー */}
+                    {/* ヘッダー (画像のみ) */}
                     <header className="relative w-full bg-gradient-to-b from-slate-900 to-slate-950 border-b border-slate-800 pb-4 px-4 text-center overflow-hidden">
                         <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
                         <div className="max-w-5xl mx-auto relative z-10">
-                            <img src="ヘッダー.png" alt="魔王を倒す前に、まずお前を追放する" className="w-full h-auto object-contain drop-shadow-2xl float-anim" onError={(e) => {e.target.style.display='none'; e.target.nextSibling.style.display='block'}} />
+                            <img src="ヘッダー.png" alt="魔王を倒す前に、まずお前を追放する" className="w-full h-auto object-contain drop-shadow-2xl float-anim" onError={(e) => {e.target.style.display='none'}} />
                         </div>
                     </header>
 
-                    <div className="max-w-6xl mx-auto px-4 space-y-24 mt-8">
+                    <div className="max-w-6xl mx-auto px-4 space-y-16 mt-8">
                         
                         {/* ストーリー */}
                         <section className="text-center">
@@ -279,7 +284,58 @@
                             </div>
                         </section>
 
-                        {/* ゲームデータ・ルール詳細 (移動後) */}
+                        {/* クエストデータ詳細 (新規追加) */}
+                        <section className="bg-slate-900/60 rounded-2xl p-6 border border-slate-700 shadow-2xl mb-12">
+                            <h2 className="text-3xl md:text-4xl font-black text-yellow-500 mb-8 text-center flex items-center justify-center gap-3">
+                                <span className="text-4xl">📜</span> クエストデータ詳細
+                            </h2>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left text-slate-300">
+                                    <thead className="text-xs text-slate-400 uppercase bg-slate-800 border-b border-slate-600">
+                                        <tr>
+                                            <th className="px-4 py-3">ランク</th>
+                                            <th className="px-4 py-3">出現確率</th>
+                                            <th className="px-4 py-3">必要人数 (計算式)</th>
+                                            <th className="px-4 py-3">報酬 (Lv)</th>
+                                            <th className="px-4 py-3 text-red-400">被ダメージ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr className="border-b border-slate-700 hover:bg-slate-800/50">
+                                            <td className="px-4 py-3 font-bold text-red-500">S (女王の依頼)</td>
+                                            <td className="px-4 py-3">10%</td>
+                                            <td className="px-4 py-3">生存数 ± 0</td>
+                                            <td className="px-4 py-3 text-yellow-400">+4</td>
+                                            <td className="px-4 py-3 text-red-400 font-bold">6</td>
+                                        </tr>
+                                        <tr className="border-b border-slate-700 hover:bg-slate-800/50">
+                                            <td className="px-4 py-3 font-bold text-red-400">A (王国防衛)</td>
+                                            <td className="px-4 py-3">20%</td>
+                                            <td className="px-4 py-3">生存数 - 1</td>
+                                            <td className="px-4 py-3 text-yellow-400">+3</td>
+                                            <td className="px-4 py-3 text-red-400 font-bold">4</td>
+                                        </tr>
+                                        <tr className="border-b border-slate-700 hover:bg-slate-800/50">
+                                            <td className="px-4 py-3 font-bold text-orange-400">B (砦奪還)</td>
+                                            <td className="px-4 py-3">30%</td>
+                                            <td className="px-4 py-3">生存数 - 2</td>
+                                            <td className="px-4 py-3 text-yellow-400">+2</td>
+                                            <td className="px-4 py-3 text-red-400 font-bold">2</td>
+                                        </tr>
+                                        <tr className="hover:bg-slate-800/50">
+                                            <td className="px-4 py-3 font-bold text-yellow-300">C (討伐)</td>
+                                            <td className="px-4 py-3">40%</td>
+                                            <td className="px-4 py-3">生存数 - 3</td>
+                                            <td className="px-4 py-3 text-yellow-400">+1</td>
+                                            <td className="px-4 py-3 text-red-400 font-bold">1</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p className="text-xs text-slate-500 mt-2 text-right">※必要人数の最低値は1人です。</p>
+                            </div>
+                        </section>
+
+                        {/* 魔王・ゲームデータ詳細 (職業図鑑の下に移動) */}
                         <section className="bg-slate-900/60 rounded-2xl p-6 border border-slate-700 shadow-2xl">
                             <h2 className="text-3xl md:text-4xl font-black text-red-500 mb-8 text-center flex items-center justify-center gap-3">
                                 <span className="text-4xl">👿</span> 魔王・ゲームデータ詳細
@@ -294,7 +350,7 @@
                                             <tbody>
                                                 <tr className="border-b border-slate-700"><th className="py-2 text-slate-400">日数 (ターン数)</th><td className="py-2 font-bold">プレイ人数と同じ日数</td></tr>
                                                 <tr className="border-b border-slate-700"><th className="py-2 text-slate-400">魔王戦 制限</th><td className="py-2 font-bold">3ラウンド耐久 または 魔王討伐</td></tr>
-                                                <tr><th className="py-2 text-slate-400">魔王の基本攻撃力</th><td className="py-2 font-bold text-red-400">生存人数 × 3</td></tr>
+                                                <tr><th className="py-2 text-slate-400">魔王の基本攻撃力</th><td className="py-2 font-bold text-red-400">ゲーム開始時の人数 × 3</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -303,9 +359,9 @@
                                         <h3 className="text-xl font-bold text-purple-400 mb-3 border-b border-slate-600 pb-2">魔王HP (プレイ人数別)</h3>
                                         <div className="grid grid-cols-4 gap-2 text-center">
                                             <div className="bg-slate-900 p-2 rounded"><div className="text-xs text-slate-500">3人</div><div className="text-xl font-black text-white">200</div></div>
-                                            <div className="bg-slate-900 p-2 rounded"><div className="text-xs text-slate-500">4人</div><div className="text-xl font-black text-white">350</div></div>
-                                            <div className="bg-slate-900 p-2 rounded"><div className="text-xs text-slate-500">5人</div><div className="text-xl font-black text-white">500</div></div>
-                                            <div className="bg-slate-900 p-2 rounded"><div className="text-xs text-slate-500">6人</div><div className="text-xl font-black text-white">700</div></div>
+                                            <div className="bg-slate-900 p-2 rounded"><div className="text-xs text-slate-500">4人</div><div className="text-xl font-black text-white">300</div></div>
+                                            <div className="bg-slate-900 p-2 rounded"><div className="text-xs text-slate-500">5人</div><div className="text-xl font-black text-white">450</div></div>
+                                            <div className="bg-slate-900 p-2 rounded"><div className="text-xs text-slate-500">6人</div><div className="text-xl font-black text-white">600</div></div>
                                         </div>
                                     </div>
                                 </div>
@@ -316,24 +372,24 @@
                                     <h3 className="text-xl font-bold text-red-500 mb-4">魔王の行動パターン</h3>
                                     <div className="space-y-3">
                                         <div className="flex gap-3 items-start bg-slate-900/50 p-3 rounded border border-slate-700">
-                                            <div className="w-12 text-center font-bold text-sm pt-1 text-slate-500">60%</div>
+                                            <div className="w-12 text-center font-bold text-sm pt-1 text-slate-500">50%</div>
                                             <div>
                                                 <div className="text-red-300 font-bold">通常攻撃</div>
-                                                <div className="text-xs text-slate-400">ランダムな対象(1〜4名)に <span className="text-white font-bold">基本攻撃力 × 2</span> の物理ダメージ</div>
+                                                <div className="text-xs text-slate-400">ランダムな対象(人数-2名)に <span className="text-white font-bold">基本攻撃力 × 2</span> の物理ダメージ</div>
                                             </div>
                                         </div>
                                         <div className="flex gap-3 items-start bg-slate-900/50 p-3 rounded border border-slate-700">
-                                            <div className="w-12 text-center font-bold text-sm pt-1 text-purple-500">20%</div>
+                                            <div className="w-12 text-center font-bold text-sm pt-1 text-purple-500">25%</div>
                                             <div>
                                                 <div className="text-purple-300 font-bold">魔法攻撃</div>
                                                 <div className="text-xs text-slate-400">全員に <span className="text-white font-bold">基本攻撃力 × 1</span> の<span className="text-purple-400">防御無視</span>ダメージ</div>
                                             </div>
                                         </div>
                                         <div className="flex gap-3 items-start bg-slate-900/50 p-3 rounded border border-slate-700">
-                                            <div className="w-12 text-center font-bold text-sm pt-1 text-orange-500">15%</div>
+                                            <div className="w-12 text-center font-bold text-sm pt-1 text-orange-500">20%</div>
                                             <div>
                                                 <div className="text-orange-400 font-bold">闇の獄炎</div>
-                                                <div className="text-xs text-slate-400">全員に <span className="text-white font-bold">基本攻撃力 × 1.5</span> の物理ダメージ</div>
+                                                <div className="text-xs text-slate-400">全員に <span className="text-white font-bold">基本攻撃力 × 1.5</span> の<span className="text-orange-400">防御無視</span>ダメージ</div>
                                             </div>
                                         </div>
                                         <div className="flex gap-3 items-start bg-slate-900/50 p-3 rounded border border-slate-700 bg-red-900/10">
