@@ -297,6 +297,7 @@
                             {orderedPlayers.map((p) => (
                                 <div key={p.id} className={`flex-none w-20 bg-slate-800 rounded border ${p.isDead ? 'border-red-900 opacity-60' : 'border-slate-600'} p-1 flex flex-col justify-center gap-0.5 relative`}>
                                     <div className="flex justify-between items-center leading-none px-0.5 relative z-10">
+                                        {/* 画像を削除 */}
                                         <span className={`font-bold text-xs truncate flex-grow ${p.isDead ? 'text-red-500' : 'text-white'}`}>{p.name}</span>
                                         {p.isDead && <span className="text-[9px] text-red-500 font-black ml-0.5">†</span>}
                                     </div>
@@ -1085,8 +1086,6 @@
                             else if (val === 'skill') {
                                 // ターゲット選択不要なスキル
                                 if (['CLERIC', 'MONK', 'SPIRIT', 'PLAYBOY'].includes(activePlayer.roleKey)) {
-                                    // SAGEも攻撃対象固定または自分回復のみなら選択不要だが、魔王orプレイヤー選択がある場合は必要
-                                    // 今回SAGEは魔王orプレイヤー選択なので、SAGEは選択必要リストへ
                                     handleBossAction({ type: 'SKILL' });
                                 } else if (activePlayer.roleKey === 'SAGE') {
                                     // SAGEは対象選択が必要
@@ -1101,7 +1100,7 @@
                                     // 騎士の場合、特殊な選択肢を表示
                                     showAttackTargetSelect(true, 'KNIGHT_GUARD');
                                 } else {
-                                    // ターゲット選択が必要なスキル (HERO, WARRIOR, KNIGHT, BARRIER_MASTER)
+                                    // ターゲット選択が必要なスキル (HERO, WARRIOR, BARRIER_MASTER)
                                     showAttackTargetSelect(true); 
                                 }
                             }
@@ -1733,7 +1732,7 @@
                                                          </span>
                                                          <div className="bg-slate-900/80 px-3 py-1 rounded border border-slate-600 text-center">
                                                             <span className="text-[10px] text-slate-400 block leading-none">必要</span>
-                                                            <span className="text-lg font-black text-white leading-none">{q.req === 0 ? '∞' : q.req}</span>
+                                                            <span className="text-lg font-black text-white leading-none">{q.req}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1964,7 +1963,7 @@
                                         <div className="text-5xl font-black text-white mb-4">{bossNextAction?.name}</div>
                                         <div className="text-2xl text-slate-300">{bossNextAction?.desc}</div>
                                         <div className="text-xl text-orange-400 font-bold mt-4 bg-slate-900/50 p-2 rounded">
-                                            {getBossActionDetail(bossNextAction, playerCount)}
+                                            {getBossActionDetail(bossNextAction, bossInitialPlayerCount)}
                                         </div>
                                     </div>
 
